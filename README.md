@@ -19,3 +19,8 @@ Perhaps we should make it mainly recognize the front facing image and not focus 
 https://www.codesofinterest.com/2017/04/extracting-individual-facial-features-dlib.html Another article detailing on how to get certain facial features from people. Actually describes the 68 points given and what each one means. Now with this we can really work on how to extract some key features. Maybe look up some slider functions for character customizations to get an idea on what facial features are really important.
 
 Another idea we can do is to extract the facial type (round, rectangle, etc...). Not very important to implement given the small dataset we have, but it could work.
+
+## Design Ideas
+We should each put our respective methods (data augmentation, feature extraction) into seperate python scripts. Once we move onto developing CNNs, we can each create a 'train.py' that imports those scripts and uses them however we want. We can customize our own networks and experiment with different features/augmentations without having to worry about file conflicts in git.
+
+For the data augmentation script, I might have one callable function that takes a data set and a series of bools as parameters. Setting a specific parameter to true means that you want to add that augmentation to the data set. Default values of bools are false, so calling the function with only the data set will return the data set unaltered.
