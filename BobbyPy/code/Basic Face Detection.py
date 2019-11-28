@@ -12,6 +12,9 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 import collections
+import glob
+import cv2
+import os
 
 # Used only the knowledge of how to convert this dict file into a manageable numpy file from here
 # https://github.com/Hvass-Labs/TensorFlow-Tutorials/blob/master/cifar10.py
@@ -155,12 +158,12 @@ def unpickle(file):
     return dict
 
 
-class Net(nn.Module):
+class BasicNet(nn.Module):
 
     def __init__(self):
-        super(Net, self).__init__()
+        super(BasicNet, self).__init__()
         self.layer1 = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=5, stride=1, padding=2),
+            nn.Conv2d(3, 32, kernel_size=6, stride=2, padding=2),
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2))
         self.layer2 = nn.Sequential(
@@ -180,14 +183,13 @@ class Net(nn.Module):
         output = self.layer2(output)
         output = self.layer3(output)
         output = output.reshape(output.size(0), -1)
-        # output = self.fc1(output)
         output = F.relu(self.fc1(output))
         output = self.fc2(output)
         return output
 
 # Used https://www.stefanfiott.com/machine-learning/cifar-10-classifier-using-cnn-in-pytorch/ to get an idea on how to save my torch model
 def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_array):
-    model = Net()
+    model = BasicNet()
     # How I originally get the data is a double and not a float so I need to .float() a few times
     model = model.float()
 
@@ -204,6 +206,7 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
     loss_list = []
     acc_list = []
 
+    print(np.shape(data_matrix))
     data_matrix = np.transpose(data_matrix, (0, 3, 1, 2))
     train_loader = convert_np_to_tensor(data_matrix, data_labels_array, True, batch_size)
 
@@ -236,31 +239,32 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
     # torch.save(model.state_dict(), get_image_directory())
     # print('Saved model parameters to disk.')
 
-    test_matrix = test_matrix[:1000]
-    test_matrix = np.transpose(test_matrix, (0, 3, 1, 2))
-    test_labels_array = test_labels_array[:1000]
-    test_acc_list = []
-    test_batch = 1000
+    # test_matrix = test_matrix[:1000]
+    # test_matrix = np.transpose(test_matrix, (0, 3, 1, 2))
+    # test_labels_array = test_labels_array[:1000]
+    # test_acc_list = []
+    # test_batch = 1000
+    #
+    # test_loader = convert_np_to_tensor(test_matrix, test_labels_array, False, test_batch)
 
-    test_loader = convert_np_to_tensor(test_matrix, test_labels_array, False, test_batch)
+    # model.eval()
+    # # For how to grab the confusion matrix https://www.stefanfiott.com/machine-learning/cifar-10-classifier-using-cnn-in-pytorch/
+    # confusion_matrix = np.zeros([10, 10], int)
+    # with torch.no_grad():
+    #     correct = 0
+    #     total = 0
+    #     for images, labels in test_loader:
+    #         outputs = model(images.float())
+    #         _, predicted = torch.max(outputs.data, 1)
+    #         total += labels.size(0)
+    #         correct += (predicted == labels).sum().item()
+    #         for i, l in enumerate(labels):
+    #             confusion_matrix[l.item(), predicted[i].item()] += 1
+    #
+    #     print('Test Accuracy of the model on the 1000 test images: {} %'.format((correct / total) * 100))
 
-    model.eval()
-    # For how to grab the confusion matrix https://www.stefanfiott.com/machine-learning/cifar-10-classifier-using-cnn-in-pytorch/
-    confusion_matrix = np.zeros([10, 10], int)
-    with torch.no_grad():
-        correct = 0
-        total = 0
-        for images, labels in test_loader:
-            outputs = model(images.float())
-            _, predicted = torch.max(outputs.data, 1)
-            total += labels.size(0)
-            correct += (predicted == labels).sum().item()
-            for i, l in enumerate(labels):
-                confusion_matrix[l.item(), predicted[i].item()] += 1
-
-        print('Test Accuracy of the model on the 1000 test images: {} %'.format((correct / total) * 100))
-
-    return confusion_matrix
+    #return confusion_matrix
+    return
 
 # https://datascience.stackexchange.com/questions/45916/loading-own-train-data-and-labels-in-dataloader-using-pytorch
 # For appending numpy into tensor flow data set
@@ -274,160 +278,50 @@ def convert_np_to_tensor(data, labels, shuffle, batch_size):
     return trainloader
 
 
-def Fisher_LDF(data_matrix, data_labels_array, test_matrix, test_labels_array):
+def load_images_from_list(directory, list):
+    image_list = np.zeros(shape=(1, 576, 768, 3), dtype=float)
+    raw_list = []
 
-    H, mean_array, covariance_array = Fisher_Training(data_matrix, data_labels_array)
+    for i in range(len(list)):
+        #print(directory + "/" + list[i])
+        im = Image.open(directory + "/" + list[i])
+        image_list = np.concatenate(image_list, (np.array(im, dtype=float)))
 
-    conf_matrix = Fisher_Test(test_matrix, test_labels_array, H, mean_array, covariance_array)
+    print(image_list)
+    print(np.shape(image_list))
 
-    return conf_matrix
-
-def Fisher_Training(data_matrix, data_labels_array):
-    data_matrix = data_matrix.reshape((10000, (32*32*3), 1))[:10000]
-    data_labels_array = data_labels_array[:10000]
-
-    print(np.shape(data_matrix))
-    print(np.shape(data_labels_array))
-
-    # 0-10 array for class mean
-    class_mean_array    = np.zeros(shape=(10, (32 * 32 * 3), 1))
-    overall_class_mean = np.zeros(shape=((32 * 32 * 3), 1))
-
-    # 0-10 array for each class' covariance
-    class_covariance_array = np.zeros(shape=(10, (32 * 32 * 3), (32 * 32 * 3)))
-
-    # Getting the N for every item in the batch (we don't use unique)
-    unique, counts = np.unique(data_labels_array, return_counts=True)
-    print(counts)
-
-    # Setting class mean of the label (min label is 0, max is 9 so it is fine)
-    for i in range(len(data_matrix)):
-        label = data_labels_array[i]
-        class_mean_array[label] = class_mean_array[label] + data_matrix[i]
-
-    # Finalizing each class mean and overall mean
-    for i in range(len(class_mean_array)):
-        class_mean_array[i] = class_mean_array[i] / counts[i]
-        overall_class_mean = overall_class_mean + class_mean_array[i]
-
-    overall_class_mean = np.divide(overall_class_mean, len(class_mean_array))
-
-    data_class_list = []
-    print("Class covariance calculating")
-    for i in range(len(counts)):
-        data_class_list.append(data_matrix[np.argwhere(data_labels_array==i)].reshape(counts[i], (32 * 32 * 3)))
-        i_cov = np.cov((data_class_list[i]).T)
-        class_covariance_array[i] = i_cov
-
-    # Used to be the old way of setting up the class covariance array (took 25 minutes previously...)
-    # for i in range(len(data_matrix)):
-    #     if i % 100 == 0:
-    #         print("Class covariance currently at " + str(i))
-    #     label = data_labels_array[i]
-    #     subtracted_feature = np.subtract(data_matrix[i], class_mean_array[label])
-    #     class_covariance_array[label] = class_covariance_array[label] + np.dot(subtracted_feature, subtracted_feature.T)
-    #
-    # for i in range(len(class_covariance_array)):
-    #     class_covariance_array[i] = class_covariance_array[i] / counts[i]
-
-    print("B calculation begins")
-
-    B = np.zeros(shape=((32 * 32 * 3), (32 * 32 * 3)))
-
-    for i in range(len(class_mean_array)):
-        mean_difference = class_mean_array[i] - overall_class_mean
-        B = B + np.dot(mean_difference, mean_difference.T)
-
-    print("A calculation begins")
-
-    A = np.zeros(shape=((32 * 32 * 3), (32 * 32 * 3)))
-    for i in range(len(class_covariance_array)):
-        A = A + class_covariance_array[i]
-
-    print("Computing H")
-    A_inv = np.linalg.inv(A)
-    A_inv = np.nan_to_num(A_inv)
-    eig_val, eig_vect = np.linalg.eig(np.dot(A_inv, B))
-    eig_val = np.abs(eig_val)
-
-    # Checking result
-    rank = len(class_mean_array) - 1
-    max_vals_array = np.flip(eig_val.argsort()[-rank:])
-    H = []
-    for i in range(len(max_vals_array)):
-        H.append(eig_vect[:, max_vals_array[i]])
-
-    H = np.array(H).T
-
-    fisher_mean_array       = np.zeros(shape=(10, rank, 1))
-    fisher_covariance_array = np.zeros(shape=(10, rank, rank))
+    return image_list
 
 
+def grab_all_files_in_directory(directory):
+    from os import listdir
+    from os.path import isfile, join
+    onlyfiles = [f for f in listdir(directory) if isfile(join(directory, f))]
+    return onlyfiles
 
-    # Calculating both fisher variables
-    for i in range(len(fisher_mean_array)):
-        fisher_mean_array[i] = np.dot(H.T, class_mean_array[i])
-        fisher_covariance_array[i] = np.dot(np.dot(H.T, class_covariance_array[i]), H)
 
-    print("Done Training!")
+def grab_labels_from_list(list):
+    label_list = []
 
-    return H, fisher_mean_array, fisher_covariance_array
+    for i in range(len(list)):
+        data = list[i].split("_")
+        label_list.append(data[0][-1])
 
-def Fisher_Test(test_matrix, test_labels_array, H, mean_array, covariance_array):
-    test_matrix = test_matrix.reshape((10000, (32 * 32 * 3), 1))[:1000]
-    test_labels_array = test_labels_array[:1000]
 
-    print(np.shape(test_matrix))
-    print(np.shape(test_labels_array))
-    print(np.shape(covariance_array[0]))
-
-    class_confusion_matrix = np.zeros(shape=(10, 10))
-
-    num_classes = 10
-
-    print("Calculating test confusion matrix using Fisher LDF and melanohbis distance as classifier")
-
-    for i in range(1000):
-        d_matrix = np.zeros(shape=(10, 1))
-        f_space = np.dot(H.T, test_matrix[i])
-        for j in range(num_classes):
-            f_sub_m = f_space - mean_array[j]
-            d_result = np.dot(np.dot(f_sub_m.T, np.linalg.pinv(covariance_array[j])), f_sub_m)
-            d_matrix[j] = d_result
-
-        label = test_labels_array[i]
-        lowest_distance = np.argmin(d_matrix)
-        # print("Lowest distance = " + str(lowest_distance))
-        # print("Label = " + str(label))
-        class_confusion_matrix[label][lowest_distance] = class_confusion_matrix[label][lowest_distance] + 1
-
-    current_correct_count = 0
-
-    for i in range(10):
-        current_correct_count = current_correct_count + class_confusion_matrix[i][i]
-
-    total_accuracy = (current_correct_count / len(test_labels_array)) * 100
-    print("Accuracy = " + str(total_accuracy))
-    print("Error = " + str(100 - total_accuracy))
-
-    return class_confusion_matrix
+    return np.array(label_list)
 
 
 def main():
     data_directory = get_image_directory()
+    training_image_directory = data_directory + "\\training"
+    test_image_directory = data_directory + "\\test"
 
-    data_matrix, data_labels_array = load_data(data_directory + "\\data_batch_1")
-    test_matrix, test_labels_array = load_data(data_directory + "\\test_batch")
-    # a = np.zeros(shape=(9, 9))
-    # np.linalg.pinv(a)
-    # a = np.zeros(shape=(10, 9, 9))
-    # np.linalg.inv(a[0])
+    training_list = grab_all_files_in_directory(training_image_directory)
 
-    conf_matrix = Fisher_LDF(data_matrix, data_labels_array, test_matrix, test_labels_array)
-    print(conf_matrix)
+    train_labels = grab_labels_from_list(training_list)
+    train_data = load_images_from_list(training_image_directory, training_list)
 
-    nn_conf_matrix = train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_array)
-    print(nn_conf_matrix)
+    train_and_test(train_data, train_labels, train_data, train_labels)
 
     return
 
