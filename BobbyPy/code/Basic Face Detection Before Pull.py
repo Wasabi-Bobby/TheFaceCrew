@@ -153,18 +153,14 @@ class BasicNet(nn.Module):
         return output
 
 # Used https://www.stefanfiott.com/machine-learning/cifar-10-classifier-using-cnn-in-pytorch/ to get an idea on how to save my torch model
-def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_array):
+def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_array, num_epochs=10, batch_size=20, learning_rate=0.01, mod_name="model"):
     model = BasicNet()
     # How I originally get the data is a double and not a float so I need to .float() a few times
     model = model.float()
 
-    # num_epochs = 5
-    # batch_size = 4
-    # learning_rate = 0.001
-
-    num_epochs = 10
-    batch_size = 20
-    learning_rate = 0.01
+    num_epochs = num_epochs
+    batch_size = batch_size
+    learning_rate = learning_rate
 
     # Train the model
     total_step = len(data_matrix)
@@ -199,18 +195,18 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
             _, predicted = torch.max(outputs.data, 1)
             correct = (predicted == labels).sum().item()
             acc_list.append(correct / total)
-        print("Accuracy = " + str(correct / total * 100))
+        # print("Accuracy = " + str(correct / total * 100))
 
     # Wanted to save this for future reference for myself
-    # TODO: Run this as administrator and uncomment
-    torch.save(model.state_dict(), get_image_directory() + "/models")
+    # TODO: Read this and make sure you run this in admin or else this won't work
+    torch.save(model.state_dict(), get_image_directory() + "/models/" + mod_name)
     print('Saved model parameters to disk.')
 
     #test_matrix = test_matrix[:1000]
     test_matrix = np.transpose(test_matrix, (0, 3, 1, 2))
     #test_labels_array = test_labels_array[:1000]
     test_acc_list = []
-    test_batch = 20
+    test_batch = batch_size
 
     test_loader = convert_np_to_tensor(test_matrix, test_labels_array, True, test_batch)
 
@@ -279,7 +275,7 @@ def load_images_from_list_pgm(directory, list):
     height = 64
     width = 64
     list_len = len(list)
-    print(list_len)
+    #print(list_len)
     raw_list = np.zeros(shape=(list_len, width, height, 3), dtype=np.float64)
     for i in range(len(list)):
         #if i > 0:
@@ -334,13 +330,11 @@ def normalize(x):
 def standardize_data(data):
     '''
     Currently does not work ( Going to have to make my own, which just requires a loop of some sort
-    :param data:
-    :return:
+    :param data: np array
+    :return: standardized np array
     '''
-    from sklearn.datasets import load_iris
-    from sklearn import preprocessing
 
-    standardized_data = preprocessing.scale(data)
+    standardized_data = (data - np.mean(data)) / np.std(data)
     return standardized_data
 
 
@@ -366,7 +360,56 @@ def main():
     train_data = normalize(train_data)
     test_data = normalize(test_data)
 
-    train_and_test(train_data, train_labels, test_data, test_labels)
+    # Batch size = 5
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.001, "lowLR_0_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.001, "lowLR_1_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.001, "lowLR_2_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.001, "lowLR_3_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.001, "lowLR_4_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.01, "medLR_0_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.01, "medLR_1_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.01, "medLR_2_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.01, "medLR_3_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.01, "medLR_4_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.1, "highLR_0_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.1, "highLR_1_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.1, "highLR_2_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.1, "highLR_3_0")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.1, "highLR_4_0")
+
+    # Batch size = 25
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.001, "lowLR_0_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.001, "lowLR_1_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.001, "lowLR_2_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.001, "lowLR_3_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.001, "lowLR_4_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.01, "medLR_0_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.01, "medLR_1_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.01, "medLR_2_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.01, "medLR_3_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.01, "medLR_4_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.1, "highLR_0_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.1, "highLR_1_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.1, "highLR_2_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.1, "highLR_3_1")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.1, "highLR_4_1")
+
+    # Batch size = 50
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.001, "lowLR_0_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.001, "lowLR_1_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.001, "lowLR_2_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.001, "lowLR_3_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.001, "lowLR_4_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.01, "medLR_0_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.01, "medLR_1_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.01, "medLR_2_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.01, "medLR_3_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.01, "medLR_4_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.1, "highLR_0_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.1, "highLR_1_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.1, "highLR_2_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.1, "highLR_3_2")
+    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.1, "highLR_4_2")
 
     return
 
