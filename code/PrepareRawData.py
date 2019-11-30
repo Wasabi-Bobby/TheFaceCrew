@@ -23,10 +23,12 @@ for fileName in os.listdir(directory):
         data.append(img)
         labels.append(label)
 
-pp.make_rotations(data, {90})
+# print(len(data))
+# pp.make_rotations(data, {90})
 
-print(type(data[0]))
-print(type(data[-1]))
+print(len(data))
+pp.make_mirrored(data, {-1,0,1})
+print(len(data))
 
 dataset = {
     "data": data,
