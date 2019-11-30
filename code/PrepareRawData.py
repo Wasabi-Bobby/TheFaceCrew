@@ -25,10 +25,19 @@ for fileName in os.listdir(directory):
 
 # print(len(data))
 # pp.make_rotations(data, {90})
+# print(len(data))
+
+# print(len(data))
+# pp.make_mirrored(data, {-1,0,1})
+# print(len(data))
 
 print(len(data))
-pp.make_mirrored(data, {-1,0,1})
+pp.make_blurry(data, 3)
 print(len(data))
+
+# print(data[-1].shape)
+# test = pp.unflatten(data[-1])
+cv2.imwrite("test.png", data[-1])
 
 dataset = {
     "data": data,
