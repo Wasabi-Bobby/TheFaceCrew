@@ -164,7 +164,7 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
 
     num_epochs = 10
     batch_size = 20
-    learning_rate = 0.005
+    learning_rate = 0.01
 
     # Train the model
     total_step = len(data_matrix)
@@ -203,14 +203,14 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
 
     # Wanted to save this for future reference for myself
     # TODO: Run this as administrator and uncomment
-    # torch.save(model.state_dict(), get_image_directory())
-    # print('Saved model parameters to disk.')
+    torch.save(model.state_dict(), get_image_directory() + "/models")
+    print('Saved model parameters to disk.')
 
     #test_matrix = test_matrix[:1000]
     test_matrix = np.transpose(test_matrix, (0, 3, 1, 2))
     #test_labels_array = test_labels_array[:1000]
     test_acc_list = []
-    test_batch = 100
+    test_batch = 20
 
     test_loader = convert_np_to_tensor(test_matrix, test_labels_array, True, test_batch)
 
@@ -321,10 +321,27 @@ def grab_labels_from_list(list):
 
     return np.array(label_list)
 
+def normalize(x):
+    """
+    https://stackoverflow.com/questions/49429734/trying-to-normalize-python-image-getting-error-rgb-values-must-be-in-the-0-1
+    Normalize a list of sample image data in the range of 0 to 1
+    : x: List of image data.  The image shape is (32, 32, 3)
+    : return: Numpy array of normalized data
+    """
+    return np.array((x - np.min(x)) / (np.max(x) - np.min(x)))
 
-def normalize_data(data):
+# Sets standard deviation of data to one and shifts to have a mean of zero
+def standardize_data(data):
+    '''
+    Currently does not work ( Going to have to make my own, which just requires a loop of some sort
+    :param data:
+    :return:
+    '''
+    from sklearn.datasets import load_iris
+    from sklearn import preprocessing
 
-    return
+    standardized_data = preprocessing.scale(data)
+    return standardized_data
 
 
 def main():
@@ -344,10 +361,12 @@ def main():
     # print(np.shape(test_labels))
     # print(np.shape(test_data))
 
-    train_and_test(train_data, train_labels, test_data, test_labels)
+    #train_and_test(train_data, train_labels, test_data, test_labels)
 
-    train_data = normalize_data(train_data)
-    test_data = normalize_data(test_data)
+    train_data = normalize(train_data)
+    test_data = normalize(test_data)
+
+    train_and_test(train_data, train_labels, test_data, test_labels)
 
     return
 
