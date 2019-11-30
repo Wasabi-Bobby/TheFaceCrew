@@ -3,40 +3,36 @@ import pickle
 from torch.utils.data import Dataset
 
 def save_dataset(dataset, file):
-"""
-Save a configuration of an augmented dataset to a location to speed up development
+    """
+    Save a configuration of an augmented dataset to a location to speed up development
 
-Args
-    dataset: a dictionary with properties 'data' and 'labels'
-    file: filepath of where to save pickled data
-"""    
+    Args
+        dataset: a dictionary with properties 'data' and 'labels'
+        file: filepath of where to save pickled data
+    """    
     pickle.dump(dataset, open(location, "wb"))
-
-
     
 def load_dataset(file):
-"""
-Load a dataset from file location
+    """
+    Load a dataset from file location
 
-Args
-    file: filepath to  pickled binary
+    Args
+        file: filepath to  pickled binary
 
-Returns
-    A dict of unpickled data
-"""    
+    Returns
+        A dict of unpickled data
+    """    
     with open(file, 'rb') as fo:
         dict = pickle.load(fo, encoding='bytes')
     return dict
 
+class MIT_CBCL(Dataset):
+    """
+    Overloaded class for handling MIT-CBCL dataset with pytorch methods
 
-
-class MIT-CBCL(Dataset):
-"""
-Overloaded class for handling MIT-CBCL dataset with pytorch methods
-
-Args
-    Dataset: filepath of pickled dataset file
-"""
+    Args
+        Dataset: filepath of pickled dataset file
+    """
 
     def __init__(self, file):
         batch = load_dataset(file)
