@@ -17,7 +17,7 @@ def load_dataset(file):
     Load a dataset from file location
 
     Args
-        file: filepath to  pickled binary
+        file: filepath to pickled binary
 
     Returns
         A dict of unpickled data
@@ -29,12 +29,13 @@ def load_dataset(file):
 class MIT_CBCL(Dataset):
     """
     Overloaded class for handling MIT-CBCL dataset with pytorch methods
-
-    Args
-        Dataset: filepath of pickled dataset file
     """
 
     def __init__(self, file):
+        """
+        Args
+            file: location of dataset
+        """
         batch = load_dataset(file)
         self.data = batch[b'data']
         self.labels = batch[b'labels']
