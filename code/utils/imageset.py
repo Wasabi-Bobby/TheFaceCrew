@@ -10,7 +10,7 @@ def save_dataset(dataset, file):
         dataset: a dictionary with properties 'data' and 'labels'
         file: filepath of where to save pickled data
     """    
-    pickle.dump(dataset, open(location, "wb"))
+    pickle.dump(dataset, open(file, "wb"))
     
 def load_dataset(file):
     """
