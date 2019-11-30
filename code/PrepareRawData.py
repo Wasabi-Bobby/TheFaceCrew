@@ -7,14 +7,14 @@ Script for preparing the image set to be used. Does things like:
 import os
 import cv2
 import utils.imageset
+import utils.preprocess as pp
 
 fileType = ".pgm"
-# directory = "/media/cu3us/7E05-F06D/ComputerVision/TermProject/MIT-CBCL-facerec-database/test/"
 directory = "/media/cu3us/7E05-F06D/ComputerVision/TermProject/MIT-CBCL-facerec-database/training-synthetic/"
+
 data = []
 labels = []
 for fileName in os.listdir(directory):
-    # print(fileName)
     if fileType in fileName:
         label = fileName[:4]
         img = cv2.imread(os.path.join(directory, fileName), 0) # Read in as gray-scale
@@ -23,15 +23,36 @@ for fileName in os.listdir(directory):
         data.append(img)
         labels.append(label)
 
-print(len(data))
-print(data[0].shape)
+# print(len(data))
+# pp.make_rotations(data, {90})
+# print(len(data))
 
-# cv2.imwrite("tst.png", data[0])
-        
+# print(len(data))
+# pp.make_mirrored(data, {-1,0,1})
+# print(len(data))
+
+print(len(data))
+pp.make_blurry(data, 3)
+print(len(data))
+
+# print(data[-1].shape)
+# test = pp.unflatten(data[-1])
+cv2.imwrite("test.png", data[-1])
+
 dataset = {
     "data": data,
     "labels": labels    
     }
 
 # utils.imageset.save_dataset(dataset, "/media/cu3us/7E05-F06D/ComputerVision/TermProject/TheFaceCrew/data/pickles/test_batch_grayscale_2D")
-utils.imageset.save_dataset(dataset, "/media/cu3us/7E05-F06D/ComputerVision/TermProject/TheFaceCrew/data/pickles/train-synthetic_batch_grayscale_flattened")
+# utils.imageset.save_dataset(dataset, "/media/cu3us/7E05-F06D/ComputerVision/TermProject/TheFaceCrew/data/pickles/train-synthetic_batch_grayscale_flattened")
+
+
+
+
+
+
+
+
+
+
