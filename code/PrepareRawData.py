@@ -10,7 +10,7 @@ import utils.imageset
 import utils.preprocess as pp
 
 fileType = ".pgm"
-directory = "/media/cu3us/7E05-F06D/ComputerVision/TermProject/MIT-CBCL-facerec-database/training-synthetic/"
+directory = "/home/cu3us/Tmp/MIT-CBCL-facerec-database/training-synthetic"
 
 data = []
 labels = []
@@ -32,12 +32,12 @@ for fileName in os.listdir(directory):
 # print(len(data))
 
 print(len(data))
-pp.make_blurry(data, 3)
+pp.make_blurry(data, 5)
 print(len(data))
 
 # print(data[-1].shape)
 # test = pp.unflatten(data[-1])
-cv2.imwrite("test.png", data[-1])
+# cv2.imwrite("test.png", data[-1])
 
 dataset = {
     "data": data,

@@ -84,6 +84,7 @@ def make_blurry(dataset, filter_size):
     kernel = np.ones((filter_size, filter_size))
     k_width = filter_size
     k_height = filter_size
+    border_size = int(filter_size / 2)
     was_flattened = (len(dataset[0].shape) == 1)
     augmented_dataset = []
 
@@ -91,9 +92,12 @@ def make_blurry(dataset, filter_size):
         if was_flattened:
             image = unflatten(image)
 
+        blurry_image = np.zeros_like(image)
+        # pad image
+        image = cv2.copyMakeBorder(image, border_size, border_size + 1, border_size, border_size + 1, cv2.BORDER_REPLICATE)
+        # image = cv2.copyMakeBorder(image, 3, 3, 3, 3, cv2.BORDER_REPLICATE)
         i_height = image.shape[0]
         i_width = image.shape[1]
-        blurry_image = np.zeros_like(image.astype(np.int32))
 
         for y in range(0, i_height - k_height):
             for x in range(0, i_width - k_width):
@@ -103,14 +107,14 @@ def make_blurry(dataset, filter_size):
                 # element-wise multiplication with kernel
                 sum_matrix = sub_matrix * kernel
                 # sum the matrix and set values of img_out
-                asum = np.sum(sum_matrix)
+                asum = np.sum(sum_matrix) / (k_width * k_height)
                 blurry_image[y,x] = asum
 
         if was_flattened:
             blurry_image.flatten()
 
         augmented_dataset.append(blurry_image)
-        break
+        # break
 
     dataset.extend(augmented_dataset)
 
