@@ -24,3 +24,13 @@ Another idea we can do is to extract the facial type (round, rectangle, etc...).
 We should each put our respective methods (data augmentation, feature extraction) into seperate python scripts. Once we move onto developing CNNs, we can each create a 'train.py' that imports those scripts and uses them however we want. We can customize our own networks and experiment with different features/augmentations without having to worry about file conflicts in git.
 
 For the data augmentation script, I might have one callable function that takes a data set and a series of bools as parameters. Setting a specific parameter to true means that you want to add that augmentation to the data set. Default values of bools are false, so calling the function with only the data set will return the data set unaltered.
+
+
+Import the following into python
+Pytorch
+Pillow
+opencv
+os
+Cmake
+Dlib # Note! Install Cmake first
+

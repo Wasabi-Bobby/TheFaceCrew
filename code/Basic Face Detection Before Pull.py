@@ -12,83 +12,8 @@ import torch.nn.functional as F
 import torchvision
 import torchvision.transforms as transforms
 import collections
-import glob
 import cv2
 import os
-
-# Used only the knowledge of how to convert this dict file into a manageable numpy file from here
-# https://github.com/Hvass-Labs/TensorFlow-Tutorials/blob/master/cifar10.py
-# Took since this downloading and managing is not really the main concept I am being challenged on
-
-# Various constants for the size of the images.
-# Use these constants in your own program.
-
-# Width and height of each image.
-img_size = 32
-
-# Number of channels in each image, 3 channels: Red, Green, Blue.
-num_channels = 3
-
-# Length of an image when flattened to a 1-dim array.
-img_size_flat = img_size * img_size * num_channels
-
-# Number of classes.
-num_classes = 10
-
-########################################################################
-# Various constants used to allocate arrays of the correct size.
-
-# Number of images for each batch-file in the training-set.
-_images_per_file = 10000
-
-# Total number of images in the training-set.
-# This is used to pre-allocate arrays for efficiency.
-_num_images_train = _images_per_file
-
-
-def convert_images(raw):
-    """
-    Convert images from the CIFAR-10 format and
-    return a 4-dim array with shape: [image_number, height, width, channel]
-    where the pixels are floats between 0.0 and 1.0.
-    """
-
-    # Convert the raw images from the data-files to floating-points.
-    raw_float = np.array(raw, dtype=float) / 255.0
-
-    # Reshape the array to 4-dimensions.
-    images = raw_float.reshape([-1, num_channels, img_size, img_size])
-
-    # Reorder the indices of the array.
-    images = images.transpose([0, 2, 3, 1])
-
-    return images
-
-
-def load_data(filename):
-    """
-    Load a pickled data-file from the CIFAR-10 data-set
-    and return the converted images (see above) and the class-number
-    for each image.
-    """
-
-    # Load the pickled data-file.
-    data = unpickle(filename)
-
-    # Get the raw images.
-    raw_images = data[b'data']
-
-    # Get the class-numbers for each image. Convert to numpy-array.
-    cls = np.array(data[b'labels'])
-
-    # Convert the images.
-    images = convert_images(raw_images)
-
-    return images, cls
-
-#################################
-# Back to my code now
-#################################
 
 
 def get_image_directory():
@@ -112,13 +37,6 @@ def create_image(image_vector, image_directory, image_name):
     image_path = image_directory + "\\" + image_name
     image.save(image_path)
     image.show()
-
-
-def unpickle(file):
-    import pickle
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='bytes')
-    return dict
 
 
 class BasicNet(nn.Module):
@@ -365,6 +283,46 @@ def shape_to_np(shape, dtype="int"):
     return coords
 
 
+# http://dlib.net/face_landmark_detection.py.html where I got this from for grabbing faces and important features to feed into network
+def grab_boundingbox_face():
+    import dlib
+    import glob
+
+    data_directory = get_image_directory()
+    predictor_path = data_directory + "/dlib-models/shape_predictor_68_face_landmarks.dat"
+    faces_folder_path = data_directory + "/training-dlib"
+
+    detector = dlib.get_frontal_face_detector()
+    predictor = dlib.shape_predictor(predictor_path)
+    win = dlib.image_window()
+
+    for f in glob.glob(os.path.join(faces_folder_path, "*.jpg")):
+        print("Processing file: {}".format(f))
+        img = dlib.load_rgb_image(f)
+
+        win.clear_overlay()
+        win.set_image(img)
+
+        # Ask the detector to find the bounding boxes of each face. The 1 in the
+        # second argument indicates that we should upsample the image 1 time. This
+        # will make everything bigger and allow us to detect more faces.
+        dets = detector(img, 1)
+        print("Number of faces detected: {}".format(len(dets)))
+        for k, d in enumerate(dets):
+            print("Detection {}: Left: {} Top: {} Right: {} Bottom: {}".format(
+                k, d.left(), d.top(), d.right(), d.bottom()))
+            # Get the landmarks/parts for the face in box d.
+            shape = predictor(img, d)
+            print("Part 0: {}, Part 1: {} ...".format(shape.part(0),
+                                                      shape.part(1)))
+            # Draw the face landmarks on the screen.
+            win.add_overlay(shape)
+
+        win.add_overlay(dets)
+
+        #dlib.hit_enter_to_continue()
+
+
 def main():
     data_directory = get_image_directory()
     training_image_directory = data_directory + "\\training"
@@ -379,6 +337,8 @@ def main():
     test_labels = grab_labels_from_list(test_list)
     test_data   = load_images_from_list_RGB(test_image_directory, test_list)
 
+    grab_boundingbox_face()
+
 
     # print(np.shape(test_labels))
     # print(np.shape(test_data))
@@ -391,56 +351,58 @@ def main():
     train_data = standardize_data(train_data)
     test_data = standardize_data(test_data)
 
+
+
     # Batch size = 5
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,  5, 0.001, "lowLR_1_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.001, "lowLR_1_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.001, "lowLR_2_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.001, "lowLR_3_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.001, "lowLR_4_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.01, "medLR_0_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.01, "medLR_1_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.01, "medLR_2_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.01, "medLR_3_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.01, "medLR_4_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.1, "highLR_0_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.1, "highLR_1_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.1, "highLR_2_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.1, "highLR_3_0_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.1, "highLR_4_0_std")
-
-    # Batch size = 25
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.001, "lowLR_0_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.001, "lowLR_1_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.001, "lowLR_2_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.001, "lowLR_3_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.001, "lowLR_4_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.01, "medLR_0_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.01, "medLR_1_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.01, "medLR_2_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.01, "medLR_3_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.01, "medLR_4_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.1, "highLR_0_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.1, "highLR_1_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.1, "highLR_2_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.1, "highLR_3_1_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.1, "highLR_4_1_std")
-
-    # Batch size = 50
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.001, "lowLR_0_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.001, "lowLR_1_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.001, "lowLR_2_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.001, "lowLR_3_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.001, "lowLR_4_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.01, "medLR_0_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.01, "medLR_1_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.01, "medLR_2_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.01, "medLR_3_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.01, "medLR_4_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.1, "highLR_0_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.1, "highLR_1_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.1, "highLR_2_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.1, "highLR_3_2_std")
-    train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.1, "highLR_4_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,  5, 0.001, "lowLR_1_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.001, "lowLR_1_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.001, "lowLR_2_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.001, "lowLR_3_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.001, "lowLR_4_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.01, "medLR_0_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.01, "medLR_1_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.01, "medLR_2_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.01, "medLR_3_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.01, "medLR_4_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   5, 0.1, "highLR_0_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  5, 0.1, "highLR_1_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  5, 0.1, "highLR_2_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  5, 0.1, "highLR_3_0_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 5, 0.1, "highLR_4_0_std")
+    #
+    # # Batch size = 25
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.001, "lowLR_0_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.001, "lowLR_1_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.001, "lowLR_2_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.001, "lowLR_3_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.001, "lowLR_4_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.01, "medLR_0_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.01, "medLR_1_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.01, "medLR_2_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.01, "medLR_3_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.01, "medLR_4_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   25, 0.1, "highLR_0_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  25, 0.1, "highLR_1_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  25, 0.1, "highLR_2_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  25, 0.1, "highLR_3_1_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 25, 0.1, "highLR_4_1_std")
+    #
+    # # Batch size = 50
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.001, "lowLR_0_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.001, "lowLR_1_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.001, "lowLR_2_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.001, "lowLR_3_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.001, "lowLR_4_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.01, "medLR_0_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.01, "medLR_1_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.01, "medLR_2_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.01, "medLR_3_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.01, "medLR_4_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 5,   50, 0.1, "highLR_0_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 10,  50, 0.1, "highLR_1_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 25,  50, 0.1, "highLR_2_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 50,  50, 0.1, "highLR_3_2_std")
+    # train_and_test(train_data, train_labels, test_data, test_labels, 100, 50, 0.1, "highLR_4_2_std")
 
     return
 
