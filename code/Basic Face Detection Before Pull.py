@@ -1035,6 +1035,14 @@ def main():
     # train_bounding_face_list, train_shape_list, train_exclusion_list = grab_boundingbox_face(training_image_directory)
     # train_data , train_labels = create_data_list(train_bounding_face_list, train_shape_list, training_image_directory, train_exclusion_list)
 
+    '''
+        Change these values for different tests
+    '''
+    num_epoch      = 10
+    batch_size     = 10
+    learning_rate  =  0.001
+
+
     #TODO: CHANGE MODEL NAME WITH EACH RUN
 
     model_name = "BEST-MODEL_0"
@@ -1043,7 +1051,7 @@ def main():
     print("Creating data and label")
     train_pre_data, train_pre_label = create_data_preprocessed_list("\\processed-training-images", train_pre_list)
     print("Starting to train")
-    create_and_train_model(train_pre_data, train_pre_label, 5, 5, 0.01, model_name)
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, model_name)
 
     # Preprocesses the data
     #test_bounding_face_list, test_shape_list, test_exclusion_list = grab_boundingbox_face_test(test_image_directory)
@@ -1051,7 +1059,7 @@ def main():
     print("Creating test data and label")
     test_data, test_labels = create_test_preprocessed_list("\\processed-test-images", grab_all_files_in_directory(test_preprocessed_image_directory))
     print("Testing")
-    test_and_report(test_data, test_labels, model_name, 15)
+    test_and_report(test_data, test_labels, model_name, batch_size)
 
 
     # bounding_face_list, shape_list = grab_boundingbox_face(test_image_directory)
