@@ -174,7 +174,7 @@ def train_and_test(data_matrix, data_labels_array, test_matrix, test_labels_arra
             for i, l in enumerate(labels):
                 confusion_matrix[l.item(), predicted[i].item()] += 1
 
-        print('Test Accuracy of the model on the 1000 test images: {} %'.format((correct / total) * 100))
+        print('Test Accuracy of the model on the ' + str(len(test_matrix)) + ' test images: {} %'.format((correct / total) * 100))
 
     print(confusion_matrix)
 
@@ -1012,7 +1012,7 @@ def test_and_report(test_matrix, test_labels_array, model_name, batch_size):
             for i, l in enumerate(labels):
                 confusion_matrix[l.item(), predicted[i].item()] += 1
 
-        print('Test Accuracy of the model on the 1000 test images: {} %'.format((correct / total) * 100))
+        print('Test Accuracy of the model on the ' + str(len(test_matrix)) + ' test images: {} %'.format((correct / total) * 100))
 
     print(confusion_matrix)
 
@@ -1045,13 +1045,50 @@ def main():
 
     #TODO: CHANGE MODEL NAME WITH EACH RUN
 
-    model_name = "BEST-MODEL_0"
+    model_name = "BEST-MODEL_"
+
+
     print("Retrieving training data list")
     train_pre_list = grab_all_files_in_directory(training_preprocessed_image_directory)
     print("Creating data and label")
     train_pre_data, train_pre_label = create_data_preprocessed_list("\\processed-training-images", train_pre_list)
     print("Starting to train")
-    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, model_name)
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "0"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "1"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "2"))
+
+    num_epoch = 100
+    batch_size = 3
+    learning_rate = 0.0001
+
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "3"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "4"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "5"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "6"))
+
+    num_epoch = 100
+    batch_size = 9
+    learning_rate = 0.00001
+
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "7"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "8"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "9"))
+
+    num_epoch = 100
+    batch_size = 10
+    learning_rate = 0.1
+
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "10"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "11"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "12"))
+
+    num_epoch = 100
+    batch_size = 15
+    learning_rate = 0.01
+
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "10"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "11"))
+    create_and_train_model(train_pre_data, train_pre_label, num_epoch, batch_size, learning_rate, (model_name + "12"))
 
     # Preprocesses the data
     #test_bounding_face_list, test_shape_list, test_exclusion_list = grab_boundingbox_face_test(test_image_directory)
@@ -1059,7 +1096,8 @@ def main():
     print("Creating test data and label")
     test_data, test_labels = create_test_preprocessed_list("\\processed-test-images", grab_all_files_in_directory(test_preprocessed_image_directory))
     print("Testing")
-    test_and_report(test_data, test_labels, model_name, batch_size)
+    for i in range(13):
+        test_and_report(test_data, test_labels, (model_name + str(i)), batch_size)
 
 
     # bounding_face_list, shape_list = grab_boundingbox_face(test_image_directory)
